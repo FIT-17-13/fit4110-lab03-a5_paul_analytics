@@ -1,0 +1,16 @@
+{
+  "eventId": "550e8400-e29b-41d4-a716-446655440001",
+  "eventType": "policy.decision.created",
+  "eventVersion": "1.0.0",
+  "occurredAt": "2026-05-21T09:10:00Z",
+  "source": "core-business-service",
+  "correlationId": "CORR-CORE-POLICY-001",
+  "data": {
+    "decisionId": "DEC-001",
+    "policyId": "POLICY-ACCESS-AFTER-HOURS",
+    "subjectId": "SV001",
+    "result": "DENIED",
+    "reasonCode": "ACCESS_AFTER_HOURS",
+    "reasonText": "Access attempt outside allowed time"
+  }
+}

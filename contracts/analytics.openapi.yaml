@@ -1,0 +1,1180 @@
+openapi: 3.1.0
+
+info:
+  title: Smart Campus — Analytics Service API
+  version: 1.0.0
+  description: |
+    OpenAPI contract for FIT4110 Lab 03 — A5 Analytics Service.
+
+    Analytics Service receives events from multiple services in Product A:
+    - IoT Ingestion
+    - Access Gate
+    - AI Vision / Camera Stream
+    - Core Business
+
+    The service aggregates events into metrics for dashboard and reporting.
+  contact:
+    name: A5 Analytics Team
+    email: a5-analytics@example.edu.vn
+
+servers:
+  - url: http://localhost:4010
+    description: Prism mock server
+  - url: http://localhost:8085
+    description: Local Analytics Service
+
+tags:
+  - name: health
+    description: Health check API
+  - name: events
+    description: Event ingestion API
+  - name: metrics
+    description: Analytics metric query APIs
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check Analytics service health
+      description: |
+        Returns service health status. This endpoint is used by testers,
+        mock server and CI pipeline to verify that the Analytics API is available.
+      tags:
+        - health
+      security: []
+      responses:
+        "200":
+          description: Analytics service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: analytics-service
+                    version: 1.0.0
+
+  /events:
+    post:
+      operationId: ingestAnalyticsEvent
+      summary: Ingest event from upstream services
+      description: |
+        Receives events from IoT Ingestion, Access Gate, AI Vision and Core Business.
+
+        Analytics stores or processes these events to generate metrics such as:
+        daily event count, access metrics, alert metrics and dashboard summaries.
+      tags:
+        - events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsEvent"
+            examples:
+              iotSensorReading:
+                summary: IoT sensor reading event
+                value:
+                  eventId: EVT-IOT-001
+                  eventType: iot.sensor.reading
+                  eventVersion: 1.0.0
+                  occurredAt: "2026-05-21T08:00:00Z"
+                  source: iot-ingestion
+                  correlationId: CORR-IOT-001
+                  data:
+                    deviceId: esp32-a101
+                    locationId: room-a101
+                    temperature: 31.5
+                    humidity: 72
+                    motion: true
+
+              accessLogCreated:
+                summary: Access gate log event
+                value:
+                  eventId: evt-20260526-0001
+                  eventType: access.logs.created
+                  eventVersion: 1.0.0
+                  occurredAt: "2026-05-26T08:00:00Z"
+                  source: access-gate
+                  correlationId: corr-20260526-0001
+                  data:
+                    logId: log-7788
+                    cardId: RFID-2026-001
+                    gateId: gate-main-01
+                    direction: IN
+                    status: ALLOWED
+
+              visionDetectionCreated:
+                summary: AI Vision detection event
+                value:
+                  eventId: EVT-VISION-001
+                  eventType: vision.detection.created
+                  eventVersion: 1.0.0
+                  occurredAt: "2026-05-21T09:00:00Z"
+                  source: ai-vision
+                  correlationId: CORR-VISION-001
+                  data:
+                    detectionId: DET-001
+                    cameraId: cam-gate-01
+                    objectType: person
+                    detected: true
+                    confidence: 0.91
+                    riskLevel: medium
+                    locationId: gate-main
+
+              coreAlertCreated:
+                summary: Core alert created event
+                value:
+                  eventId: EVT-CORE-001
+                  eventType: core.alert.created
+                  eventVersion: 1.0.0
+                  occurredAt: "2026-05-21T09:15:00Z"
+                  source: core-business
+                  correlationId: CORR-CORE-001
+                  data:
+                    alertId: ALT-001
+                    alertType: unauthorized_access
+                    severity: high
+                    status: open
+                    message: Access attempt outside allowed time
+                    relatedEntityType: access_event
+                    relatedEntityId: ACC-001
+      responses:
+        "202":
+          description: Event accepted for analytics processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventAcceptedResponse"
+              examples:
+                accepted:
+                  value:
+                    accepted: true
+                    eventId: EVT-ACCESS-001
+                    status: accepted
+                    message: Event accepted for analytics processing
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /metrics/daily:
+    get:
+      operationId: getDailyMetrics
+      summary: Get daily analytics metrics
+      description: |
+        Returns daily aggregated metrics from all ingested events.
+        This endpoint is used by dashboard to show total events, alerts,
+        access counts and sensor summaries by date range.
+      tags:
+        - metrics
+      parameters:
+        - $ref: "#/components/parameters/FromDateTime"
+        - $ref: "#/components/parameters/ToDateTime"
+      responses:
+        "200":
+          description: Daily analytics metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyMetricsResponse"
+              examples:
+                daily:
+                  value:
+                    from: "2026-05-21T00:00:00Z"
+                    to: "2026-05-21T23:59:59Z"
+                    totalEvents: 240
+                    totalAlerts: 12
+                    totalAccessEvents: 120
+                    totalSensorReadings: 80
+                    totalDetections: 28
+                    averageTemperature: 30.8
+                    abnormalEvents: 7
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /metrics/access:
+    get:
+      operationId: getAccessMetrics
+      summary: Get access gate metrics
+      description: |
+        Returns metrics generated from Access Gate events.
+        This endpoint helps Access Gate and dashboard verify total IN/OUT,
+        granted/denied access and access count by gate.
+      tags:
+        - metrics
+      parameters:
+        - $ref: "#/components/parameters/FromDateTime"
+        - $ref: "#/components/parameters/ToDateTime"
+        - $ref: "#/components/parameters/GateId"
+      responses:
+        "200":
+          description: Access metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessMetricsResponse"
+              examples:
+                access:
+                  value:
+                    from: "2026-05-21T00:00:00Z"
+                    to: "2026-05-21T23:59:59Z"
+                    totalAccessEvents: 120
+                    totalIn: 70
+                    totalOut: 50
+                    allowedCount: 110
+                    deniedCount: 8
+                    errorCount: 2
+                    byGate:
+                      - gateId: gate-main-01
+                        total: 80
+                        allowed: 75
+                        denied: 4
+                        error: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /metrics/alerts:
+    get:
+      operationId: getAlertMetrics
+      summary: Get alert metrics
+      description: |
+        Returns alert metrics generated from Core Business alert events.
+        This endpoint supports dashboard charts for alert severity, status,
+        alert type and resolution statistics.
+      tags:
+        - metrics
+      parameters:
+        - $ref: "#/components/parameters/FromDateTime"
+        - $ref: "#/components/parameters/ToDateTime"
+        - $ref: "#/components/parameters/Severity"
+        - $ref: "#/components/parameters/AlertStatus"
+      responses:
+        "200":
+          description: Alert metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertMetricsResponse"
+              examples:
+                alerts:
+                  value:
+                    from: "2026-05-21T00:00:00Z"
+                    to: "2026-05-21T23:59:59Z"
+                    totalAlerts: 12
+                    openAlerts: 5
+                    resolvedAlerts: 7
+                    averageResolutionMinutes: 14.5
+                    bySeverity:
+                      - severity: high
+                        count: 5
+                      - severity: medium
+                        count: 4
+                      - severity: low
+                        count: 3
+                    byStatus:
+                      - status: open
+                        count: 5
+                      - status: resolved
+                        count: 7
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    FromDateTime:
+      name: from
+      in: query
+      required: true
+      description: Start datetime in ISO-8601 UTC format
+      schema:
+        type: string
+        format: date-time
+      example: "2026-05-21T00:00:00Z"
+
+    ToDateTime:
+      name: to
+      in: query
+      required: true
+      description: End datetime in ISO-8601 UTC format
+      schema:
+        type: string
+        format: date-time
+      example: "2026-05-21T23:59:59Z"
+
+    GateId:
+      name: gateId
+      in: query
+      required: false
+      description: Optional gate id filter
+      schema:
+        type:
+          - string
+          - "null"
+        minLength: 1
+        maxLength: 80
+      example: gate-main
+
+    Severity:
+      name: severity
+      in: query
+      required: false
+      description: Optional severity filter
+      schema:
+        $ref: "#/components/schemas/Severity"
+
+    AlertStatus:
+      name: status
+      in: query
+      required: false
+      description: Optional alert status filter
+      schema:
+        $ref: "#/components/schemas/AlertStatus"
+
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        service:
+          type: string
+          example: analytics-service
+        version:
+          type: string
+          example: 1.0.0
+
+    AnalyticsEvent:
+      oneOf:
+        - $ref: "#/components/schemas/IotSensorReadingEvent"
+        - $ref: "#/components/schemas/AccessEventCreatedEvent"
+        - $ref: "#/components/schemas/VisionDetectionCreatedEvent"
+        - $ref: "#/components/schemas/CorePolicyDecisionCreatedEvent"
+        - $ref: "#/components/schemas/CoreAlertCreatedEvent"
+        - $ref: "#/components/schemas/CoreAlertResolvedEvent"
+      discriminator:
+        propertyName: eventType
+        mapping:
+          iot.sensor.reading: "#/components/schemas/IotSensorReadingEvent"
+          access.logs.created: "#/components/schemas/AccessEventCreatedEvent"
+          vision.detection.created: "#/components/schemas/VisionDetectionCreatedEvent"
+          policy.decision.created: "#/components/schemas/CorePolicyDecisionCreatedEvent"
+          core.alert.created: "#/components/schemas/CoreAlertCreatedEvent"
+          core.alert.resolved: "#/components/schemas/CoreAlertResolvedEvent"
+
+    EventBase:
+      type: object
+      required:
+        - eventId
+        - eventType
+        - eventVersion
+        - occurredAt
+        - source
+        - correlationId
+        - data
+      properties:
+        eventId:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Unique event id for idempotency
+        eventType:
+          type: string
+          minLength: 3
+          maxLength: 120
+        eventVersion:
+          type: string
+          pattern: "^\\d+\\.\\d+\\.\\d+$"
+          example: 1.0.0
+        occurredAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum:
+            - iot-ingestion
+            - access-gate
+            - ai-vision
+            - core-business
+            - core-business-service
+        correlationId:
+          type: string
+          minLength: 3
+          maxLength: 100
+        data:
+          type: object
+
+    IotSensorReadingEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          required:
+            - eventType
+            - source
+            - data
+          properties:
+            eventType:
+              type: string
+              const: iot.sensor.reading
+            source:
+              type: string
+              const: iot-ingestion
+            data:
+              $ref: "#/components/schemas/IotSensorReadingData"
+
+    AccessEventCreatedEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          required:
+            - eventType
+            - source
+            - data
+          properties:
+            eventType:
+              type: string
+              const: access.logs.created
+            source:
+              type: string
+              const: access-gate
+            data:
+              $ref: "#/components/schemas/AccessEventData"
+
+    VisionDetectionCreatedEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          required:
+            - eventType
+            - source
+            - data
+          properties:
+            eventType:
+              type: string
+              const: vision.detection.created
+            source:
+              type: string
+              const: ai-vision
+            data:
+              $ref: "#/components/schemas/VisionDetectionData"
+
+    CorePolicyDecisionCreatedEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          required:
+            - eventType
+            - source
+            - data
+          properties:
+            eventType:
+              type: string
+              const: policy.decision.created
+            source:
+              type: string
+              const: core-business-service
+            data:
+              $ref: "#/components/schemas/CorePolicyDecisionData"
+
+    CoreAlertCreatedEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          required:
+            - eventType
+            - source
+            - data
+          properties:
+            eventType:
+              type: string
+              const: core.alert.created
+            source:
+              type: string
+              const: core-business
+            data:
+              $ref: "#/components/schemas/CoreAlertCreatedData"
+
+    CoreAlertResolvedEvent:
+      allOf:
+        - $ref: "#/components/schemas/EventBase"
+        - type: object
+          required:
+            - eventType
+            - source
+            - data
+          properties:
+            eventType:
+              type: string
+              const: core.alert.resolved
+            source:
+              type: string
+              const: core-business
+            data:
+              $ref: "#/components/schemas/CoreAlertResolvedData"
+
+    IotSensorReadingData:
+      type: object
+      additionalProperties: false
+      required:
+        - deviceId
+        - locationId
+        - temperature
+        - humidity
+        - motion
+      properties:
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: esp32-a101
+        locationId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: room-a101
+        temperature:
+          type: number
+          minimum: -20
+          maximum: 80
+          example: 31.5
+        humidity:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 72
+        motion:
+          type: boolean
+          example: true
+
+    AccessEventData:
+      type: object
+      additionalProperties: false
+      required:
+        - logId
+        - cardId
+        - gateId
+        - direction
+        - status
+      properties:
+        logId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: log-7788
+        cardId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: RFID-2026-001
+        gateId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: gate-main-01
+        direction:
+          type: string
+          enum:
+            - IN
+            - OUT
+        status:
+          type: string
+          enum:
+            - ALLOWED
+            - DENIED
+            - ERROR
+        personId:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+          example: SV001
+        studentId:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+          example: SV001
+        buildingId:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+          example: building-a
+        readerId:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+          example: reader-main-01
+        reasonCode:
+          type:
+            - string
+            - "null"
+          maxLength: 100
+          example: VALID_CARD
+        riskLevel:
+          type:
+            - string
+            - "null"
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+            - "null"
+
+    VisionDetectionData:
+      type: object
+      additionalProperties: false
+      required:
+        - detectionId
+        - cameraId
+        - objectType
+        - detected
+        - confidence
+      properties:
+        detectionId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: DET-001
+        cameraId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: cam-gate-01
+        objectType:
+          type: string
+          enum:
+            - person
+            - vehicle
+            - unknown_object
+        detected:
+          type: boolean
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.91
+        riskLevel:
+          $ref: "#/components/schemas/RiskLevel"
+        locationId:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+
+    CorePolicyDecisionData:
+      type: object
+      additionalProperties: false
+      required:
+        - decisionId
+        - policyId
+        - subjectId
+        - result
+        - reasonCode
+        - reasonText
+      properties:
+        decisionId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: DEC-001
+        policyId:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: POLICY-ACCESS-AFTER-HOURS
+        subjectId:
+          type: string
+          minLength: 1
+          maxLength: 80
+          example: SV001
+        result:
+          type: string
+          enum:
+            - ALLOWED
+            - DENIED
+          example: DENIED
+        reasonCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: ACCESS_AFTER_HOURS
+        reasonText:
+          type: string
+          minLength: 1
+          maxLength: 300
+          example: Access attempt outside allowed time
+
+    CoreAlertCreatedData:
+      type: object
+      additionalProperties: false
+      required:
+        - alertId
+        - alertType
+        - severity
+        - status
+        - message
+      properties:
+        alertId:
+          type: string
+          minLength: 1
+          maxLength: 80
+        alertType:
+          type: string
+          enum:
+            - unauthorized_access
+            - unknown_person
+            - temperature_threshold
+            - motion_detected
+            - policy_violation
+        severity:
+          $ref: "#/components/schemas/Severity"
+        status:
+          $ref: "#/components/schemas/AlertStatus"
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+        relatedEntityType:
+          type:
+            - string
+            - "null"
+          enum:
+            - iot_event
+            - access_event
+            - vision_event
+            - policy_decision
+            - "null"
+        relatedEntityId:
+          type:
+            - string
+            - "null"
+          maxLength: 80
+
+    CoreAlertResolvedData:
+      type: object
+      additionalProperties: false
+      required:
+        - alertId
+        - resolvedAt
+        - resolutionStatus
+      properties:
+        alertId:
+          type: string
+          minLength: 1
+          maxLength: 80
+        resolvedAt:
+          type: string
+          format: date-time
+        resolutionStatus:
+          type: string
+          enum:
+            - resolved
+            - dismissed
+            - false_positive
+        resolutionNote:
+          type:
+            - string
+            - "null"
+          maxLength: 500
+
+    Severity:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+        - critical
+
+    RiskLevel:
+      type:
+        - string
+        - "null"
+      enum:
+        - low
+        - medium
+        - high
+        - critical
+        - "null"
+
+    AlertStatus:
+      type: string
+      enum:
+        - open
+        - in_progress
+        - resolved
+        - dismissed
+
+    EventAcceptedResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - accepted
+        - eventId
+        - status
+        - message
+      properties:
+        accepted:
+          type: boolean
+        eventId:
+          type: string
+          example: EVT-ACCESS-001
+        status:
+          type: string
+          enum:
+            - accepted
+        message:
+          type: string
+          example: Event accepted for analytics processing
+
+    DailyMetricsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+        - totalEvents
+        - totalAlerts
+        - totalAccessEvents
+        - totalSensorReadings
+        - totalDetections
+        - abnormalEvents
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        totalEvents:
+          type: integer
+          minimum: 0
+        totalAlerts:
+          type: integer
+          minimum: 0
+        totalAccessEvents:
+          type: integer
+          minimum: 0
+        totalSensorReadings:
+          type: integer
+          minimum: 0
+        totalDetections:
+          type: integer
+          minimum: 0
+        averageTemperature:
+          type:
+            - number
+            - "null"
+          minimum: -20
+          maximum: 80
+        abnormalEvents:
+          type: integer
+          minimum: 0
+
+    AccessMetricsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+        - totalAccessEvents
+        - totalIn
+        - totalOut
+        - allowedCount
+        - deniedCount
+        - errorCount
+        - byGate
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        totalAccessEvents:
+          type: integer
+          minimum: 0
+        totalIn:
+          type: integer
+          minimum: 0
+        totalOut:
+          type: integer
+          minimum: 0
+        allowedCount:
+          type: integer
+          minimum: 0
+        deniedCount:
+          type: integer
+          minimum: 0
+        errorCount:
+          type: integer
+          minimum: 0
+        byGate:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/GateMetricItem"
+
+    GateMetricItem:
+      type: object
+      additionalProperties: false
+      required:
+        - gateId
+        - total
+        - allowed
+        - denied
+        - error
+      properties:
+        gateId:
+          type: string
+        total:
+          type: integer
+          minimum: 0
+        allowed:
+          type: integer
+          minimum: 0
+        denied:
+          type: integer
+          minimum: 0
+        error:
+          type: integer
+          minimum: 0
+
+    AlertMetricsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - from
+        - to
+        - totalAlerts
+        - openAlerts
+        - resolvedAlerts
+        - bySeverity
+        - byStatus
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        totalAlerts:
+          type: integer
+          minimum: 0
+        openAlerts:
+          type: integer
+          minimum: 0
+        resolvedAlerts:
+          type: integer
+          minimum: 0
+        averageResolutionMinutes:
+          type:
+            - number
+            - "null"
+          minimum: 0
+        bySeverity:
+          type: array
+          minItems: 0
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/SeverityMetricItem"
+        byStatus:
+          type: array
+          minItems: 0
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/StatusMetricItem"
+
+    SeverityMetricItem:
+      type: object
+      additionalProperties: false
+      required:
+        - severity
+        - count
+      properties:
+        severity:
+          $ref: "#/components/schemas/Severity"
+        count:
+          type: integer
+          minimum: 0
+
+    StatusMetricItem:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - count
+      properties:
+        status:
+          $ref: "#/components/schemas/AlertStatus"
+        count:
+          type: integer
+          minimum: 0
+
+    Problem:
+      type: object
+      additionalProperties: true
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://example.com/problems/validation-error
+        title:
+          type: string
+          example: Validation Error
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          example: 400
+        detail:
+          type:
+            - string
+            - "null"
+          example: Request body is invalid
+        instance:
+          type:
+            - string
+            - "null"
+          example: /events
+        errors:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Invalid request syntax or missing required query parameters
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://example.com/problems/bad-request
+            title: Bad Request
+            status: 400
+            detail: Missing required query parameter from or to
+            instance: /metrics/daily
+
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://example.com/problems/unauthorized
+            title: Unauthorized
+            status: 401
+            detail: Bearer token is missing or invalid
+            instance: /events
+
+    Forbidden:
+      description: Authenticated client does not have permission
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://example.com/problems/forbidden
+            title: Forbidden
+            status: 403
+            detail: Client does not have permission to access this resource
+            instance: /events
+
+    Conflict:
+      description: Event already exists or was already processed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://example.com/problems/conflict
+            title: Conflict
+            status: 409
+            detail: Event with the same eventId was already processed
+            instance: /events
+
+    UnprocessableEntity:
+      description: Request is syntactically valid but violates business rules
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://example.com/problems/unprocessable-entity
+            title: Unprocessable Entity
+            status: 422
+            detail: from must be earlier than to
+            instance: /metrics/daily
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://example.com/problems/internal-server-error
+            title: Internal Server Error
+            status: 500
+            detail: Analytics failed to process the request
+            instance: /events

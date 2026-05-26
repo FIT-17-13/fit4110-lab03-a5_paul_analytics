@@ -4,11 +4,11 @@
 
 ## 1. Functional tests
 
-- [ ] Có test cho endpoint health.
-- [ ] Có test happy path cho endpoint chính.
-- [ ] Có kiểm tra status code 2xx.
-- [ ] Có kiểm tra field quan trọng trong response.
-- [ ] Có ít nhất 1 test đọc dữ liệu danh sách hoặc chi tiết.
+- [x] Có test cho endpoint health.
+- [x] Có test happy path cho endpoint chính.
+- [x] Có kiểm tra status code 2xx.
+- [x] Có kiểm tra field quan trọng trong response.
+- [x] Có ít nhất 1 test đọc dữ liệu danh sách hoặc chi tiết.
 
 ## 2. Auth tests
 
