@@ -6,8 +6,16 @@
 
 "scripts": {
   "mock:iot": "prism mock contracts/analytics.openapi.yaml --port 4010 --host 0.0.0.0",
+  "mock:vision": "prism mock contracts/ai-vision.openapi.yaml --port 4011 --host 0.0.0.0",
+  "mock:analytics": "prism mock contracts/analytics.openapi.yaml --port 4010 --host 0.0.0.0",
+
+  "lint:contracts": "spectral lint contracts/*.yaml --fail-severity error",
+
   "test:mock": "newman run postman/collections/analytics_access_core.postman_collection.json -e postman/environments/analytics_mock.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman-report.xml",
-  "lint:contracts": "spectral lint contracts/*.yaml --fail-severity error"
+
+  "test:analytics": "newman run postman/collections/analytics_access_core.postman_collection.json -e postman/environments/analytics_mock.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman-report-analytics.xml",
+
+  "test:iot": "newman run postman/collections/FIT4110_lab03_iot_ingestion.postman_collection.json -e postman/environments/FIT4110_lab03_mock.postman_environment.json --reporters cli,junit --reporter-junit-export reports/newman-report-iot.xml"
 }
 ,
   "devDependencies": {
