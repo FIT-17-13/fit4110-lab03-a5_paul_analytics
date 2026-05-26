@@ -1,0 +1,555 @@
+{
+  "info": {
+    "_postman_id": "analytics-access-core-collection",
+    "name": "Analytics Access + Core Lab03 Tests",
+    "description": "Postman collection for A5 Analytics Lab03. This collection tests Analytics APIs for Access Gate and Core Business events using Prism mock server or local Analytics service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01_Functional",
+      "item": [
+        {
+          "name": "GET Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has status ok', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Access Logs Created",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt-20260526-0001\",\n  \"eventType\": \"access.logs.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-26T08:00:00Z\",\n  \"source\": \"access-gate\",\n  \"correlationId\": \"corr-20260526-0001\",\n  \"data\": {\n    \"logId\": \"log-7788\",\n    \"cardId\": \"RFID-2026-001\",\n    \"gateId\": \"gate-main-01\",\n    \"direction\": \"IN\",\n    \"status\": \"ALLOWED\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('Event accepted', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.accepted).to.eql(true);",
+                  "    pm.expect(json.status).to.eql('accepted');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Core Policy Decision Created",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"eventType\": \"policy.decision.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-21T09:10:00Z\",\n  \"source\": \"core-business-service\",\n  \"correlationId\": \"CORR-CORE-POLICY-001\",\n  \"data\": {\n    \"decisionId\": \"DEC-001\",\n    \"policyId\": \"POLICY-ACCESS-AFTER-HOURS\",\n    \"subjectId\": \"SV001\",\n    \"result\": \"DENIED\",\n    \"reasonCode\": \"ACCESS_AFTER_HOURS\",\n    \"reasonText\": \"Access attempt outside allowed time\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 202', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('Core event accepted', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.accepted).to.eql(true);",
+                  "    pm.expect(json.status).to.eql('accepted');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Access Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics/access?from={{from}}&to={{to}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics",
+                "access"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{to}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Access metrics response has totals', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('totalAccessEvents');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Daily Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics/daily?from={{from}}&to={{to}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "to",
+                  "value": "{{to}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Daily metrics response has totalEvents', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('totalEvents');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02_Negative",
+      "item": [
+        {
+          "name": "POST Access Missing Required Field",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt-20260526-invalid-001\",\n  \"eventType\": \"access.logs.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-26T08:00:00Z\",\n  \"source\": \"access-gate\",\n  \"correlationId\": \"corr-20260526-invalid-001\",\n  \"data\": {\n    \"logId\": \"log-7788\",\n    \"cardId\": \"RFID-2026-001\",\n    \"direction\": \"IN\",\n    \"status\": \"ALLOWED\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 or 422', function () {",
+                  "    pm.expect([400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Access Invalid Direction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt-20260526-invalid-002\",\n  \"eventType\": \"access.logs.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-26T08:00:00Z\",\n  \"source\": \"access-gate\",\n  \"correlationId\": \"corr-20260526-invalid-002\",\n  \"data\": {\n    \"logId\": \"log-7788\",\n    \"cardId\": \"RFID-2026-001\",\n    \"gateId\": \"gate-main-01\",\n    \"direction\": \"ENTER\",\n    \"status\": \"ALLOWED\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 or 422', function () {",
+                  "    pm.expect([400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Access Invalid Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt-20260526-invalid-003\",\n  \"eventType\": \"access.logs.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-26T08:00:00Z\",\n  \"source\": \"access-gate\",\n  \"correlationId\": \"corr-20260526-invalid-003\",\n  \"data\": {\n    \"logId\": \"log-7788\",\n    \"cardId\": \"RFID-2026-001\",\n    \"gateId\": \"gate-main-01\",\n    \"direction\": \"IN\",\n    \"status\": \"SUCCESS\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 or 422', function () {",
+                  "    pm.expect([400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Daily Metrics Missing Time Range",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics/daily",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics",
+                "daily"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 or 422', function () {",
+                  "    pm.expect([400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Daily Metrics From Greater Than To",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/metrics/daily?from=2026-05-22T00:00:00Z&to=2026-05-21T00:00:00Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "metrics",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-05-22T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-05-21T00:00:00Z"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400, 422 or 200 in mock mode', function () {",
+                  "    pm.expect([200, 400, 422]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03_Consumer_Smoke",
+      "item": [
+        {
+          "name": "Smoke Access Gate to Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"evt-smoke-access-001\",\n  \"eventType\": \"access.logs.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-26T08:10:00Z\",\n  \"source\": \"access-gate\",\n  \"correlationId\": \"corr-smoke-access-001\",\n  \"data\": {\n    \"logId\": \"log-smoke-001\",\n    \"cardId\": \"RFID-SMOKE-001\",\n    \"gateId\": \"gate-main-01\",\n    \"direction\": \"OUT\",\n    \"status\": \"DENIED\",\n    \"personId\": \"SV002\",\n    \"reasonCode\": \"CARD_EXPIRED\",\n    \"riskLevel\": \"medium\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Access smoke event accepted', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Smoke Core Business to Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"550e8400-e29b-41d4-a716-446655440999\",\n  \"eventType\": \"policy.decision.created\",\n  \"eventVersion\": \"1.0.0\",\n  \"occurredAt\": \"2026-05-21T09:10:00Z\",\n  \"source\": \"core-business-service\",\n  \"correlationId\": \"CORR-CORE-SMOKE-001\",\n  \"data\": {\n    \"decisionId\": \"DEC-SMOKE-001\",\n    \"policyId\": \"POLICY-ACCESS-AFTER-HOURS\",\n    \"subjectId\": \"SV002\",\n    \"result\": \"DENIED\",\n    \"reasonCode\": \"ACCESS_AFTER_HOURS\",\n    \"reasonText\": \"Access attempt outside allowed time\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Core smoke event accepted', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

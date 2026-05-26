@@ -1,6 +1,14 @@
-ID,Folder,Endpoint,Method,Scenario,Input file/body,Expected status,Expected response check,Type,Pass/Fail,Evidence
-TC01,Functional,/health,GET,Service is alive,-,200,status=ok,functional,,
-TC02,Functional,/readings,POST,Create reading happy path,mock-data/sensor-reading-valid.json,201,"has reading_id, accepted=true",functional,,
-TC03,Negative,/readings,POST,Missing device_id,mock-data/sensor-reading-invalid-missing-device.json,400,Problem Details,negative,,
-TC04,Auth,/readings,POST,Missing token,mock-data/sensor-reading-valid.json,401,Problem Details,auth,,
-TC05,Boundary,/readings,POST,High temperature boundary,mock-data/sensor-reading-boundary.json,201/400,documented behavior,boundary,,
+Test ID,Area,Test Name,Endpoint,Method,Input,Expected Status,Expected Result,Owner,Status,Note
+TC-001,Functional,Health check,/health,GET,None,200,Service returns status ok,A5 Analytics,Done,Public endpoint
+TC-002,Functional,Ingest Access Gate event,/events,POST,access.logs.created payload,202,Event accepted for analytics processing,A5 Analytics,Done,Access Gate -> Analytics
+TC-003,Functional,Ingest Core policy decision event,/events,POST,policy.decision.created payload,202,Event accepted for analytics processing,A5 Analytics,Done,Core Business -> Analytics
+TC-004,Functional,Get access metrics,/metrics/access,GET,from and to query parameters,200,Returns total access events and byGate metrics,A5 Analytics,Done,Used by dashboard and Access Gate verification
+TC-005,Functional,Get daily metrics,/metrics/daily,GET,from and to query parameters,200,Returns totalEvents and daily summary,A5 Analytics,Done,Analytics dashboard summary
+TC-006,Negative,Access event missing required field,/events,POST,Missing data.gateId,400 or 422,Returns Problem error response,A5 Analytics,Done,Required field validation
+TC-007,Negative,Access event invalid direction,/events,POST,direction = ENTER,400 or 422,Returns Problem error response,A5 Analytics,Done,Enum validation
+TC-008,Negative,Access event invalid status,/events,POST,status = SUCCESS,400 or 422,Returns Problem error response,A5 Analytics,Done,Enum validation
+TC-009,Negative,Metrics missing time range,/metrics/daily,GET,Missing from/to,400 or 422,Returns Problem error response,A5 Analytics,Done,Query parameter validation
+TC-010,Boundary,Metrics from greater than to,/metrics/daily,GET,from later than to,400 or 422,Returns Problem error response in local implementation,A5 Analytics,Planned,Prism mock may return 200 because it does not enforce business logic
+TC-011,Reliability,Duplicate event idempotency,/events,POST,Same eventId sent twice,202 or 409,Analytics should not count duplicate twice,A5 Analytics,Planned,Idempotency based on eventId
+TC-012,Consumer Smoke,Access Gate to Analytics smoke,/events,POST,access.logs.created payload,202,Access event accepted by Analytics,A5 Analytics,Done,Pair 9 smoke test
+TC-013,Consumer Smoke,Core Business to Analytics smoke,/events,POST,policy.decision.created payload,202,Core event accepted by Analytics,A5 Analytics,Done,Pair 8 smoke test

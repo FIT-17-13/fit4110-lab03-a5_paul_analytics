@@ -667,3 +667,11 @@ Mỗi lần sửa service, nhóm cần chứng minh được:
 - Consumer vẫn gọi được.
 - Lỗi được xử lý có kiểm soát.
 - Report có thể chạy lại bằng Newman hoặc GitHub Actions.
+## A5 Analytics — Lab 03 Test Guide
+
+### 1. OpenAPI contract
+
+Contract chính của Analytics nằm tại:
+
+```text
+contracts/analytics.openapi.yaml
