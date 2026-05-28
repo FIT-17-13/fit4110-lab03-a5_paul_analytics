@@ -38,10 +38,8 @@ paths:
   /health:
     get:
       operationId: getHealth
-      summary: Check Analytics service health
-      description: |
-        Returns service health status. This endpoint is used by testers,
-        mock server and CI pipeline to verify that the Analytics API is available.
+      summary: Health check
+      description: Check whether Analytics mock service is running.
       tags:
         - health
       security: []
@@ -52,12 +50,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
-              examples:
-                ok:
-                  value:
-                    status: ok
-                    service: analytics-service
-                    version: 1.0.0
+              example:
+                status: ok
+                service: analytics-service
+                version: 1.0.0
+
+    head:
+      operationId: headHealth
+      summary: Health readiness check
+      description: HEAD health endpoint used by wait-on in CI.
+      tags:
+        - health
+      security: []
+      responses:
+        "200":
+          description: Analytics service is ready
 
   /events:
     post:
@@ -663,15 +670,12 @@ components:
           maxLength: 100
           example: VALID_CARD
         riskLevel:
-          type:
-            - string
-            - "null"
+          type: string
           enum:
             - low
             - medium
             - high
             - critical
-            - "null"
 
     VisionDetectionData:
       type: object
@@ -788,15 +792,12 @@ components:
           minLength: 1
           maxLength: 500
         relatedEntityType:
-          type:
-            - string
-            - "null"
+          type: string
           enum:
             - iot_event
             - access_event
             - vision_event
             - policy_decision
-            - "null"
         relatedEntityId:
           type:
             - string
@@ -839,15 +840,12 @@ components:
         - critical
 
     RiskLevel:
-      type:
-        - string
-        - "null"
+      type: string
       enum:
         - low
         - medium
         - high
         - critical
-        - "null"
 
     AlertStatus:
       type: string
